@@ -278,7 +278,7 @@ class BaiduPCS:
         params = {
             "method": "list",
             "by": orderby,
-            "limit": "0-2147483647",
+            "limit": "0-100000",
             "order": ["asc", "desc"][desc],
             "path": str(remotepath),
         }
