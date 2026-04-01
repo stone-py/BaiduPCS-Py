@@ -58,8 +58,9 @@ jobs:
         run: |
           poetry run python build.py build_ext --inplace
           poetry run pytest -v -s
-
+      
       - name: Test package
         run: |
           poetry build -f sdist
-          poetry run pip install dist/*
+          poetry build -f wheel
+          poetry run pip install dist/*.whl
