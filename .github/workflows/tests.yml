@@ -61,7 +61,6 @@ jobs:
         run: |
           poetry run python build.py build_ext --inplace
           poetry run pytest -v -s
-
   build-wheels:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -76,8 +75,9 @@ jobs:
           CIBW_BUILD: cp38-* cp310-* cp311-* cp312-* cp313-*
           CIBW_ARCHS_LINUX: x86_64
           CIBW_ARCHS_WINDOWS: AMD64
-          CIBW_BEFORE_BUILD: pip install setuptools cython
-          CIBW_BUILD_VERBOSITY: 1
+          CIBW_BEFORE_BUILD: pip install setuptools cython poetry-core
+          CIBW_BUILD_VERBOSITY: 3
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: "auditwheel show {wheel} && auditwheel repair -w {dest_dir} {wheel}"
 
       - name: Upload wheels
         if: startsWith(github.ref, 'refs/tags/')
