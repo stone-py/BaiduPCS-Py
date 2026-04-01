@@ -1,5 +1,4 @@
 name: BaiduPCS-Py Build & Test
-
 on:
   push:
     branches:
@@ -20,6 +19,7 @@ on:
         required: false
         type: string
         default: ''
+
 jobs:
   build-test:
     runs-on: ${{ matrix.os }}
@@ -32,28 +32,35 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64
-      - name: Install and configure Poetry
-        uses: snok/install-poetry@v1
-        with:
-          virtualenvs-create: true
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
       - name: Install dependencies
         run: |
           poetry run pip3 install setuptools
           poetry install --no-root
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+
       - name: Format check
         run: poetry run ruff format --check .
+
       - name: Typecheck
         run: poetry run ruff check baidupcs_py
+
       - name: Test with pytest
         run: |
           poetry run python build.py build_ext --inplace
           poetry run pytest -v -s
+
       - name: Test package
         run: |
           poetry build -f sdist
