@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - master
+    tags:
+      - "v*"
   pull_request:
     branches:
       - master
@@ -38,14 +40,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64
+
       - name: Install Poetry
         run: pip install poetry==1.8.3
 
       - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           poetry run pip install setuptools
           poetry install --no-root
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
 
       - name: Format check
         run: poetry run ruff format --check .
@@ -58,9 +61,32 @@ jobs:
         run: |
           poetry run python build.py build_ext --inplace
           poetry run pytest -v -s
-      
+
       - name: Test package
         run: |
           poetry build -f sdist
           poetry build -f wheel
           poetry run pip install dist/*.whl
+
+      - name: Upload dist
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: dist/
+
+  release:
+    needs: build-test
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+          merge-multiple: true
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
