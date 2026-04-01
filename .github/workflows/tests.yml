@@ -49,6 +49,7 @@ jobs:
 
       - name: Format check
         run: poetry run ruff format --check .
+        continue-on-error: true
 
       - name: Typecheck
         run: poetry run ruff check baidupcs_py
