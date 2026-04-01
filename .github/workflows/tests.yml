@@ -8,7 +8,18 @@ on:
     branches:
       - master
       - release/*
-
+  workflow_dispatch:
+    inputs:
+      skip_format_check:
+        description: '跳过格式检查'
+        required: false
+        default: false
+        type: boolean
+      python_version:
+        description: '指定 Python 版本（可选）'
+        required: false
+        type: string
+        default: ''
 jobs:
   build-test:
     runs-on: ${{ matrix.os }}
