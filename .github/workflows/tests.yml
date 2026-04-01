@@ -28,7 +28,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest]
-        python-version: ["3.8", "3.12"]
+        python-version: ["3.8", "3.13"]
     defaults:
       run:
         shell: bash
@@ -62,21 +62,54 @@ jobs:
           poetry run python build.py build_ext --inplace
           poetry run pytest -v -s
 
-      - name: Test package
-        run: |
-          poetry build -f sdist
-          poetry build -f wheel
-          poetry run pip install dist/*.whl
+  build-wheels:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v3
 
-      - name: Upload dist
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.22.0
+        env:
+          CIBW_BUILD: cp38-* cp310-* cp311-* cp312-* cp313-*
+          CIBW_ARCHS_LINUX: x86_64
+          CIBW_ARCHS_WINDOWS: AMD64
+          CIBW_BEFORE_BUILD: pip install setuptools cython
+          CIBW_BUILD_VERBOSITY: 1
+
+      - name: Upload wheels
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
-          name: dist-${{ matrix.os }}-py${{ matrix.python-version }}
+          name: wheels-${{ matrix.os }}
+          path: wheelhouse/
+
+  build-sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pip install poetry==1.8.3
+
+      - name: Build sdist
+        run: poetry build -f sdist
+
+      - name: Upload sdist
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdist
           path: dist/
 
   release:
-    needs: build-test
+    needs: [build-test, build-wheels, build-sdist]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
